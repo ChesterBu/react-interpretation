@@ -55,6 +55,7 @@ var isHostCallbackScheduled = false;
 
 function scheduleHostCallbackIfNeeded() {
   // 如果已经调用 flushWork 的话
+  // 果当前任务正在执行中，则直接退出调度，防止多次重复进入调度造成的性能损失。
   if (isPerformingWork) {
     // Don't schedule work yet; wait until the next time we yield.
     return;
@@ -62,10 +63,12 @@ function scheduleHostCallbackIfNeeded() {
   if (firstCallbackNode !== null) {
     // Schedule the host callback using the earliest expiration in the list.
     var expirationTime = firstCallbackNode.expirationTime;
+    // 如果任务正在调度但尚未执行（还未被requestHostCallback执行），则说明新进任务优先级更高，中断原先任务调度执行新任务
     if (isHostCallbackScheduled) {
       // Cancel the existing host callback.
       cancelHostCallback();
     } else {
+      // isHostCallbackScheduled 只在此处被设置为true 
       isHostCallbackScheduled = true;
     }
     requestHostCallback(flushWork, expirationTime);
@@ -167,7 +170,7 @@ function flushFirstCallback() {
     }
   }
 }
-
+// 调度的函数
 function flushWork(didUserCallbackTimeout) {
   // Exit right away if we're currently paused
   if (enableSchedulerDebugging && isSchedulerPaused) {
@@ -185,6 +188,7 @@ function flushWork(didUserCallbackTimeout) {
     // 判断是否超时
     if (didUserCallbackTimeout) {
       // Flush all the expired callbacks without yielding.
+      // 调度超时，执行全部超时任务
       while (
         firstCallbackNode !== null &&
         !(enableSchedulerDebugging && isSchedulerPaused)
@@ -210,7 +214,7 @@ function flushWork(didUserCallbackTimeout) {
       }
     } else {
       // Keep flushing callbacks until we run out of time in the frame.
-      // 没有超时说明还有时间可以执行任务，执行任务完成后继续判断
+      // 没有超时说明还有时间可以执行任务，则执行任务直到超时挂起
       if (firstCallbackNode !== null) {
         do {
           if (enableSchedulerDebugging && isSchedulerPaused) {
@@ -368,7 +372,6 @@ function unstable_scheduleCallback(
   // 新生成一个 newNode 以后，就从头开始比较优先级
   // 如果新的高，就把新的往前插入，否则就往后插，直到没有一个 node 的优先级比他低
   // 那么新的节点就变成 lastCallbackNode
-  // 除了改变 lastCallbackNode 的情况，其他情况都需要重新调度，因为调度必须从 firstCallbackNode 开始
   if (firstCallbackNode === null) {
     // This is the first callback in the list.
     firstCallbackNode = newNode.next = newNode.previous = newNode;
@@ -377,6 +380,7 @@ function unstable_scheduleCallback(
     var next = null;
     var node = firstCallbackNode;
     do {
+      // expirationTime越小优先级越高
       if (node.expirationTime > expirationTime) {
         // The new callback expires before this one.
         next = node;
@@ -388,9 +392,11 @@ function unstable_scheduleCallback(
     if (next === null) {
       // No callback with a later expiration was found, which means the new
       // callback has the latest expiration in the list.
+      // 加到末尾
       next = firstCallbackNode;
     } else if (next === firstCallbackNode) {
       // The new callback has the earliest expiration in the entire list.
+      // 新添加firstCallbackNode就表明这个优先级最高，需要打断调度执行这个新的
       firstCallbackNode = newNode;
       scheduleHostCallbackIfNeeded();
     }

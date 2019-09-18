@@ -59,6 +59,7 @@ const requestAnimationFrameWithTimeout = function(callback) {
   // 如果页面在后台时就不会执行回调，这时候会通过 setTimeout 来保证执行 callback
   // 两个回调中都可以互相 cancel 定时器
   // callback 指的是 animationTick
+  // timestamp requestAnimationFrame() 开始去执行回调函数的时刻，该参数与performance.now()的返回值相同
   rAFID = localRequestAnimationFrame(function(timestamp) {
     // cancel the setTimeout
     localClearTimeout(rAFTimeoutID);
@@ -134,11 +135,11 @@ if (
       );
     }
   }
-
+  // flushWork
   let scheduledHostCallback = null;
   let isMessageEventScheduled = false;
   let timeoutTime = -1;
-
+  // 是否还有pending的work
   let isAnimationFrameScheduled = false;
 
   let isFlushingHostCallback = false;
@@ -160,7 +161,7 @@ if (
   channel.port1.onmessage = function(event) {
     // 一些变量的设置
     isMessageEventScheduled = false;
-
+    // flushwork
     const prevScheduledCallback = scheduledHostCallback;
     const prevTimeoutTime = timeoutTime;
     scheduledHostCallback = null;
@@ -169,6 +170,7 @@ if (
     const currentTime = getCurrentTime();
 
     let didTimeout = false;
+    // 此时frameDeadline的值为port.postMessage(undefined)时的现场此帧的值
     // 判断之前计算的时间是否小于当前时间，时间超了也就代表在 onmessage 之前执行任务所需时间过长
     if (frameDeadline - currentTime <= 0) {
       // There's no time left in this idle period. Check if the callback has
@@ -229,6 +231,7 @@ if (
     // 然后 activeFrameTime 为什么是 33 呢？因为 React 这里假设你的刷新率是 30hz
     // 一秒对应 1000 毫秒，1000 / 30 ≈ 33
     // ------------------------------- 以下注释是第二次的
+    // frameDeadline： 上一帧的 rafTime + activeFrameTime
     // 第二次进来这里执行，因为 animationTick 回调肯定是下一帧执行的，假如我们屏幕是 60hz 的刷新率
     // 那么一帧的时间为 1000 / 60 ≈ 16
     // 此时 nextFrameTime = 5000 + 16 - 5033 + 33 = 16
@@ -257,8 +260,9 @@ if (
       // running on 120hz display or 90hz VR display.
       // Take the max of the two in case one of them was an anomaly due to
       // missed frame deadlines.
-      // 第三帧进来以后，activeFrameTime = 16 < 17 ? 16 : 17 = 16
-      // 然后下次就按照一帧 16 毫秒来算了
+      // 第三帧进来以后，activeFrameTime = 17 < 16 ? 16 : 17 = 17
+      // 然后下次就按照一帧 17 毫秒来算了
+      // 取两者中的较大值
       activeFrameTime =
         nextFrameTime < previousFrameTime ? previousFrameTime : nextFrameTime;
     } else {
@@ -293,6 +297,7 @@ if (
     // 会先让页面渲染，然后判断是否要执行微任务，最后执行宏任务，并且会先执行 onmessage
     // 当然其实比 onmessage 更快的宏任务是 set​Immediate，但是这个 API 只能在 IE 下使用
     if (!isMessageEventScheduled) {
+      // 确保message被post了
       isMessageEventScheduled = true;
       port.postMessage(undefined);
     }

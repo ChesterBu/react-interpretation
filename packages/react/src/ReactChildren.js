@@ -323,6 +323,7 @@ function mapSingleChildIntoContext(bookKeeping, child, childKey) {
   const {result, keyPrefix, func, context} = bookKeeping;
   // func 就是我们在 React.Children.map(this.props.children, c => c)
   // 中传入的第二个函数参数
+  // bookKeeping.count++ 为Index
   let mappedChild = func.call(context, child, bookKeeping.count++);
   // 判断函数返回值是否为数组
   // 因为可能会出现这种情况

@@ -622,6 +622,7 @@ function legacyRenderSubtreeIntoContainer(
       root.render(children, callback);
     }
   }
+  // 返回为APP的statenode
   return getPublicRootInstance(root._internalRoot);
 }
 

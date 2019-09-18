@@ -167,7 +167,7 @@ export function updateContainerAtExpirationTime(
   callback: ?Function,
 ) {
   // TODO: If this is a nested container, this won't be the root.
-  // 和之前一样
+  // 取出容器的 fiber 对象，也就是 root fiber
   const current = container.current;
 
   if (__DEV__) {
@@ -282,12 +282,12 @@ export function createContainer(
 }
 
 export function updateContainer(
-  element: ReactNodeList,
-  container: OpaqueRoot,
+  element: ReactNodeList,   // <App />
+  container: OpaqueRoot,   // firber root
   parentComponent: ?React$Component<any, any>,
   callback: ?Function,
 ): ExpirationTime {
-  // 取出容器的 fiber 对象，也就是 fiber root
+  // 取出容器的 fiber 对象，也就是 root fiber
   const current = container.current;
   // 计算时间
   const currentTime = requestCurrentTime();
