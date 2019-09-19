@@ -101,7 +101,9 @@ function flushFirstCallback() {
   var callback = currentlyFlushingCallback.callback;
   var expirationTime = currentlyFlushingCallback.expirationTime;
   var priorityLevel = currentlyFlushingCallback.priorityLevel;
+  // currentPriorityLevel  3
   var previousPriorityLevel = currentPriorityLevel;
+  // currentExpirationTime -1
   var previousExpirationTime = currentExpirationTime;
   currentPriorityLevel = priorityLevel;
   currentExpirationTime = expirationTime;

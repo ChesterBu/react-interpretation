@@ -1948,6 +1948,7 @@ function scheduleWork (fiber: Fiber, expirationTime: ExpirationTime) {
   // 这种情况发生于以下场景：有一个优先级较低的任务（必然是异步任务）没有执行完，
   // 执行权交给了浏览器，然后再交还给 JS 的时候有一个新的高优先级任务进来了
   // 这时候需要去执行高优先级任务，所以需要打断低优先级任务
+  // 目前没有任何任务在执行，并且之前有执行过任务，同时当前的任务比之前执行的任务过期时间要早
   if (
     !isWorking &&
     nextRenderExpirationTime !== NoWork &&
