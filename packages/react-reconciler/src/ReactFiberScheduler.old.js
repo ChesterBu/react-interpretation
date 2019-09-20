@@ -2043,6 +2043,7 @@ let callbackExpirationTime: ExpirationTime = NoWork;
 let callbackID: *;
 let isRendering: boolean = false;
 let nextFlushedRoot: FiberRoot | null = null;
+// 用来记录下一个需要渲染的FiberRoot的过期时间，在findHighestPriorityRoot
 let nextFlushedExpirationTime: ExpirationTime = NoWork;
 let lowestPriorityPendingInteractiveExpirationTime: ExpirationTime = NoWork;
 let hasUnhandledError: boolean = false;
@@ -2055,6 +2056,14 @@ let isBatchingInteractiveUpdates: boolean = false;
 let completedBatches: Array<Batch> | null = null;
 
 let originalStartTimeMs: number = now();
+
+// currentRendererTime， currentSchedulerTime，这两个时间是用来是用来记录当前时间的，
+// 在计算过期时间和比较任务是否过期的时候都会用到currentRendererTime，
+// currentSchedulerTime大部分时候都是等于currentRendererTime的，那为什么要设置两个时间呢？
+
+// 这就是因为batchedUpdates了，在这种情况下如果同时创建了多个更新是会为每次更新计算过期时间的，
+// 而计算是要花时间的，如果每次都是请求当前时间，那么同一个batch中的不同更新得到的过期时间就会是不一样的，
+// 所以在一个batch中获取的当前时间应该是一样的，所以就设置了这么一个值，在我们请求当前时间的方法computeExpirationForFiber可以看出
 let currentRendererTime: ExpirationTime = msToExpirationTime(
   originalStartTimeMs,
 );
@@ -2194,13 +2203,16 @@ function requestCurrentTime() {
   //
   // But the scheduler time can only be updated if there's no pending work, or
   // if we know for certain that we're not in the middle of an event.
-
+  // 只有在performWorkOnRoot的时候才会被设置为true,在一次rendering过程中，
+  // 新产生的update用于计算过期时间的current必须跟目前的renderTime保持一致
   if (isRendering) {
     // We're already rendering. Return the most recently read time.
     return currentSchedulerTime;
   }
   // Check if there's pending work.
+      // findHighestPriorityRoot会设置nextFlushedExpirationTime，也就是只有在当前没有等待中的更新的情况下，才会重新计算当前时间。
   findHighestPriorityRoot();
+  // 在一个batched更新中，只有第一次创建更新才会重新计算时间，后面的所有更新都会复用第一次创建更新的时候的时间
   if (
     nextFlushedExpirationTime === NoWork ||
     nextFlushedExpirationTime === Never
@@ -2289,7 +2301,7 @@ function addRootToSchedule(root: FiberRoot, expirationTime: ExpirationTime) {
     }
   }
 }
-
+// 会遍历firstScheduleRoot -> lastScheduledRoot链表中所有root，并找到优先级最高的那个root进行赋值，并安排渲染
 function findHighestPriorityRoot() {
   let highestPriorityWork = NoWork;
   let highestPriorityRoot = null;

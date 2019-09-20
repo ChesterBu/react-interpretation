@@ -19,15 +19,17 @@ import {
 } from './SchedulerWithReactIntegration';
 
 export type ExpirationTime = number;
-
-export const NoWork = 0;
+// 没有更新
+export const NoWork = 0;  
 export const Never = 1;
+// 代表同步执行，不会被调度也不会被打断
 export const Sync = MAX_SIGNED_31_BIT_INT;
 
 const UNIT_SIZE = 10;
 const MAGIC_NUMBER_OFFSET = MAX_SIGNED_31_BIT_INT - 1;
 
 // 1 unit of expiration time represents 10ms.
+// ms：now() - originalStartTimeMs
 export function msToExpirationTime(ms: number): ExpirationTime {
   // Always add an offset so that we don't clash with the magic number for NoWork.
   // 5000 - 2500 = 2500

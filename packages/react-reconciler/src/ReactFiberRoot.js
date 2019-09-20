@@ -52,13 +52,26 @@ type BaseFiberRootProperties = {|
   // 2 未提交的 work 是暂停的
   // 3 未提交的 work 可能是没暂停的
   // The earliest and latest priority levels that are suspended from committing.
+  // 这两个值是用来记录被挂起的任务的过期时间的
+  // 首先我们定义一下什么情况下任务是被挂起的：
+  //    出现可捕获的错误并且还有优先级更低的任务的情况下
+  //    当捕获到thenable，并且需要设置onTimeout的时候
+  // 记录这个时间主要是在resolve了promise之后，判断被挂起的组件更新是否依然处于目前已有的suspenedTime中间，
+  // 如果不是的话是需要重新计算一个新的过期时间，然后重新加入队列进行调度更新的。
   earliestSuspendedTime: ExpirationTime,
   latestSuspendedTime: ExpirationTime,
   // The earliest and latest priority levels that are not known to be suspended.
+
+  // earliestPendingTime,latestPendingTime记录所有子树中需要进行渲染的更新的expirationTime的区间即最长expirationTime和最短的expirationTime
+  // 通过追踪最大和最小值，React 可以判断在当前更新之后是否还具有优先级更低的任务需要执行（当前过期时间处理这两个值之间）。//
   earliestPendingTime: ExpirationTime,
   latestPendingTime: ExpirationTime,
+
   // The latest priority level that was pinged by a resolved promise and can
   // be retried.
+  // 这个值是用来记录最新的一次suspended组件resolve之后，
+  // 如果挂起之前的expirationTime依然在earliestSuspendedTime和lastestSuspendedTime之间，
+  // 则会标志这个时间为pingedTime
   latestPingedTime: ExpirationTime,
 
   pingCache:
@@ -85,9 +98,25 @@ type BaseFiberRootProperties = {|
   +hydrate: boolean,
   // Remaining expiration time on this root.
   // TODO: Lift this into the renderer
+  // expirationTime是用来标志当前渲染的过期时间的，请注意他只管本渲染周期，他并不管你现在的渲染目标是哪个，
+  // 渲染目标是由 nextExpirationTimeToWorkOn来决定的。 
+  // 他们都是通过pendingTime、suspenededTime和pingedTime中删选出来的，
+  //  唯一的不同是，nextExpirationTimeToWorkOn在没有pending或者pinged的任务的时候会选择最晚的suspendedTime，
+  //  而expirationTime会选择最早的
   // root 的剩余停止时间
+  // nextExpirationTimeToWorkOn主要作用于渲染阶段：
+  //    决定那些更新要在当前周期中被执行
+  //    通过跟每个节点的expirationTime比较决定该节点是否可以直接bailout（跳过）
   nextExpirationTimeToWorkOn: ExpirationTime,
   // 过期时间
+  // expirationTime 作用于调度阶段，主要指责是：
+  //    决定是异步执行渲染还是同步执行渲染
+  //    作为react-scheduler的timeout标准，决定是否要优先渲染
+  // expirationTime的变化：
+  //   在scheduleWork的时候通过markPendingExpirationTime设置
+  //   在beginWork的时候被设置为NoWork
+  //   在onUncaughtError的时候设置为NoWork
+  //   onSuspend的时候又会设置回当次更新的expirationTime
   expirationTime: ExpirationTime,
   // List of top-level batches. This list indicates whether a commit should be
   // deferred. Also contains completion callbacks.

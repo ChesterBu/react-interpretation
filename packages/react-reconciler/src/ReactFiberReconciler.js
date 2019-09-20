@@ -287,12 +287,13 @@ export function updateContainer(
   parentComponent: ?React$Component<any, any>,
   callback: ?Function,
 ): ExpirationTime {
-  // 取出容器的 fiber 对象，也就是 root fiber
+  // 取出容器的 fiber 对象，也就是 rootfiber
   const current = container.current;
-  // 计算时间
-  const currentTime = requestCurrentTime();
-  // expirationTime 代表优先级，数字越大优先级越高
+  // 计算时间   
+  const currentTime = requestCurrentTime();  
   // sync 的数字是最大的，所以优先级也是最高的
+  // expirationTime 为 1，就是同步模式，也就类似于 React 16 之前的 stack 情况，程序会按照顺序执行下去，直到结束；
+  // expirationTime 不为 1 的时候，则其值越低，优先级越高。rootExpirationTime 不为 1 的时候会启动异步模式。
   const expirationTime = computeExpirationForFiber(currentTime, current);
   return updateContainerAtExpirationTime(
     element,
