@@ -1795,7 +1795,7 @@ function resolveRetryThenable(boundaryFiber: Fiber, thenable: Thenable) {
 
   retryTimedOutBoundary(boundaryFiber);
 }
-
+//                          // rootFiber
 function scheduleWorkToRoot(fiber: Fiber, expirationTime): FiberRoot | null {
   // 用于记录调度器的状态
   recordScheduleUpdate();
@@ -1924,9 +1924,9 @@ export function warnIfNotCurrentlyActingUpdatesInDev(fiber: Fiber): void {
     }
   }
 }
-
+// fiber: rootFiber
 function scheduleWork (fiber: Fiber, expirationTime: ExpirationTime) {
-  // 获取 fiber root
+  // 返回 fiber root，并将expirationTime更新到fiberroot上
   const root = scheduleWorkToRoot(fiber, expirationTime);
   if (root === null) {
     if (__DEV__) {
@@ -2532,7 +2532,7 @@ function finishRendering() {
 function performWorkOnRoot(
   root: FiberRoot,
   expirationTime: ExpirationTime,
-  isYieldy: boolean,
+  isYieldy: boolean,  // root：false
 ) {
   invariant(
     !isRendering,
