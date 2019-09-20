@@ -180,10 +180,19 @@ export type Fiber = {|
 
   // Represents a time in the future by which this work should be completed.
   // Does not include work found in its subtree.
+  // expirationTime代表他本身是否有更新，如果他本身有更新，那么他的更新可能会影响子树
   expirationTime: ExpirationTime,
-
+  // childExpirationTime表示他的子树是否产生了更新；如果两个都没有，那么子树是不需要更新的。
   // This is used to quickly determine if a subtree has no pending changes.
+  // 每次一个节点调用setState或者forceUpdate都会产生一个更新并且计算一个expirationTime，
+  // 那么这个节点的expirationTime就是当时计算出来的值，因为这个更新本身就是由这个节点产生的
+  // 最终因为 React 的更新需要从FiberRoot开始，所以会执行一次向上遍历找到FiberRoot，
+  // 而向上遍历则正好是一步步找到创建更新的节点的父节点的过程，
+  // 这时候 React 就会对每一个该节点的父节点链上的节点设置childExpirationTime，因为这个更新是他们的子孙节点造成的
   childExpirationTime: ExpirationTime,
+  // 同一个节点产生的连续两次更新，最终在父节点上只会体现一次childExpirationTime
+  // 不同子树产生的更新，最终体现在跟节点上的是优先级最高的那个更新
+
 
   // This is a pooled version of a Fiber. Every fiber that gets updated will
   // eventually have a pair. There are cases when we can clean up pairs to save
@@ -337,7 +346,7 @@ function FiberNode(
 // 5) It should be easy to port this to a C struct and keep a C implementation
 //    compatible.
 const createFiber = function(
-  tag: WorkTag,
+  tag: WorkTag,   // 3
   pendingProps: mixed,
   key: null | string,
   mode: TypeOfMode,

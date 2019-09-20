@@ -370,8 +370,9 @@ function ReactRoot(
   isConcurrent: boolean,
   hydrate: boolean,
 ) {
-  // 这个 root 指的是 FiberRoot
+  // 这个 root 指的是 FiberRoot  一个FiberRootNode
   const root = createContainer(container, isConcurrent, hydrate);
+  // root.current  是FiberNode
   this._internalRoot = root;
 }
 ReactRoot.prototype.render = function(
@@ -555,7 +556,7 @@ function legacyRenderSubtreeIntoContainer(
   parentComponent: ?React$Component<any, any>,
   children: ReactNodeList,
   container: DOMContainer,
-  forceHydrate: boolean,
+  forceHydrate: boolean,  
   callback: ?Function,
 ) {
   if (__DEV__) {
@@ -572,7 +573,7 @@ function legacyRenderSubtreeIntoContainer(
     // 创建一个 root 出来，类型是 ReactRoot
     root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
       container,
-      forceHydrate,
+      forceHydrate, // false
     );
     // 反正我从没传过 callback，不关心实现
     if (typeof callback === 'function') {
@@ -722,8 +723,8 @@ const ReactDOM: Object = {
     // 调用 render 函数的话这个值永远为 false，调用 hydrate 函数的话这个值会为 true
     return legacyRenderSubtreeIntoContainer(
       null,
-      element,
-      container,
+      element,  // <app>
+      container,  // document.getElementById('root')
       false,
       callback,
     );
