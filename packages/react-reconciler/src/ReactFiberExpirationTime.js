@@ -27,9 +27,10 @@ export const Sync = MAX_SIGNED_31_BIT_INT;
 
 const UNIT_SIZE = 10;
 const MAGIC_NUMBER_OFFSET = MAX_SIGNED_31_BIT_INT - 1;
-
+//  expirationTime和js的时间戳并不是一个东西，
+// expirationTime相当于一个表示优先级的东西，expirationTime越大优先级越高，
+// 而对应ms应该越小优先级越高，这个名字感觉起的有点问题
 // 1 unit of expiration time represents 10ms.
-// ms：now() - originalStartTimeMs
 export function msToExpirationTime(ms: number): ExpirationTime {
   // Always add an offset so that we don't clash with the magic number for NoWork.
   // 5000 - 2500 = 2500
