@@ -1236,7 +1236,7 @@ function performUnitOfWork(workInProgress: Fiber): Fiber | null {
 
   return next;
 }
-
+// 开始工作
 function workLoop(isYieldy) {
   // 对 nextUnitOfWork 循环进行判断，直到没有 nextUnitOfWork
   if (!isYieldy) {
@@ -1282,7 +1282,7 @@ function renderRoot(root: FiberRoot, isYieldy: boolean): void {
     resetStack();
     nextRoot = root;
     nextRenderExpirationTime = expirationTime;
-    // 获取下一个需要工作的单元
+    // 获取一个新的fiber来进行操作
     nextUnitOfWork = createWorkInProgress(
       nextRoot.current,
       null,
