@@ -389,7 +389,7 @@ export function renderWithHooks(
   }
 
   let children = Component(props, refOrContext);
-
+  // 在dispatchAction中设为true
   if (didScheduleRenderPhaseUpdate) {
     do {
       didScheduleRenderPhaseUpdate = false;

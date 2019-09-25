@@ -174,7 +174,7 @@ if (__DEV__) {
 export function reconcileChildren(
   current: Fiber | null,
   workInProgress: Fiber,
-  nextChildren: any,
+  nextChildren: any,  // 新的子节点
   renderExpirationTime: ExpirationTime,
 ) {
   if (current === null) {
@@ -199,7 +199,7 @@ export function reconcileChildren(
     // let's throw it out.
     workInProgress.child = reconcileChildFibers(
       workInProgress,
-      current.child,
+      current.child,  // 现有的子节点
       nextChildren,
       renderExpirationTime,
     );
@@ -498,10 +498,11 @@ function updateSimpleMemoComponent(
 }
 
 function updateFragment(
-  current: Fiber | null,
+  current: Fiber | null,  // current = workInProgress.alternate
   workInProgress: Fiber,
   renderExpirationTime: ExpirationTime,
 ) {
+  // Fragment的只有一个props就是他的children
   const nextChildren = workInProgress.pendingProps;
   reconcileChildren(
     current,
@@ -2066,7 +2067,7 @@ function bailoutOnAlreadyFinishedWork(
 }
 
 function beginWork(
-  current: Fiber | null,
+  current: Fiber | null,  // current = workInProgress.alternate
   workInProgress: Fiber,
   renderExpirationTime: ExpirationTime,
 ): Fiber | null {

@@ -1200,6 +1200,7 @@ function performUnitOfWork(workInProgress: Fiber): Fiber | null {
     if (workInProgress.mode & ProfileMode) {
       startProfilerTimer(workInProgress);
     }
+    // 返回的next即是下个的workInProgress，就是workInProgress。child
     next = beginWork(current, workInProgress, nextRenderExpirationTime);
     workInProgress.memoizedProps = workInProgress.pendingProps;
 
@@ -1347,9 +1348,10 @@ function renderRoot(root: FiberRoot, isYieldy: boolean): void {
   startWorkLoopTimer(nextUnitOfWork);
 
   do {
+    // 这里这个try。。。catch只执行一次，并没有循环执行
     try {
       // 循环更新节点
-      workLoop(isYieldy);
+      workLoop(isYieldy); 
     } catch (thrownValue) {
       resetContextDependences();
       resetHooks();
@@ -1420,7 +1422,7 @@ function renderRoot(root: FiberRoot, isYieldy: boolean): void {
         }
       }
     }
-    break;
+    break;  
   } while (true);
 
   if (enableSchedulerTracing) {

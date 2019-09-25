@@ -237,6 +237,7 @@ function warnOnFunctionType() {
 // to be able to optimize each path individually by branching early. This needs
 // a compiler or we can do it manually. Helpers that don't need this branching
 // live outside of this function.
+// shouldTrackSideEffects 第一次挂载为false，更新为true
 function ChildReconciler(shouldTrackSideEffects) {
   function deleteChild(returnFiber: Fiber, childToDelete: Fiber): void {
     if (!shouldTrackSideEffects) {
@@ -1114,6 +1115,7 @@ function ChildReconciler(shouldTrackSideEffects) {
   ): Fiber {
     // There's no need to check for keys on text nodes since we don't have a
     // way to define them.
+    // 可以复用
     if (currentFirstChild !== null && currentFirstChild.tag === HostText) {
       // We already have an existing node so let's just update it and delete
       // the rest.
@@ -1124,6 +1126,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
     // The existing first child is not a text node so we need to create one
     // and delete the existing ones.
+    // 不可复用就创建新的
     deleteRemainingChildren(returnFiber, currentFirstChild);
     const created = createFiberFromText(
       textContent,
@@ -1136,22 +1139,24 @@ function ChildReconciler(shouldTrackSideEffects) {
 
   function reconcileSingleElement(
     returnFiber: Fiber,
-    currentFirstChild: Fiber | null,
-    element: ReactElement,
+    currentFirstChild: Fiber | null,  // 第一次渲染时为null
+    element: ReactElement,  // 新的fiber节点
     expirationTime: ExpirationTime,
   ): Fiber {
     const key = element.key;
     let child = currentFirstChild;
+    // 循环原child找到可复用的那个节点
     while (child !== null) {
       // TODO: If key === null and child.key === null, then this only applies to
       // the first item in the list.
+      // 一个一个先比对key不同直接删
       if (child.key === key) {
         if (
           child.tag === Fragment
             ? element.type === REACT_FRAGMENT_TYPE
             : child.elementType === element.type
         ) {
-          // key 相同且 type 相同，进行复用，不相同呢就开始删
+          // key 相同且 type 相同，进行复用，不相同就可以把后面的全删了
           deleteRemainingChildren(returnFiber, child.sibling);
           const existing = useFiber(
             child,
@@ -1168,6 +1173,7 @@ function ChildReconciler(shouldTrackSideEffects) {
           }
           return existing;
         } else {
+          // 没有key相同其他不同，没有复用就全删了break下面重建
           deleteRemainingChildren(returnFiber, child);
           break;
         }
@@ -1245,10 +1251,16 @@ function ChildReconciler(shouldTrackSideEffects) {
   // This API will tag the children with the side-effect of the reconciliation
   // itself. They will be added to the side-effect list as we pass through the
   // children and the parent.
+  //  workInProgress.child = mountChildFibers(
+  //   workInProgress,
+  //   null,
+  //   nextChildren,
+  //   renderExpirationTime,
+  // );
   function reconcileChildFibers(
-    returnFiber: Fiber,
+    returnFiber: Fiber,  // child的父节点
     currentFirstChild: Fiber | null,
-    newChild: any,
+    newChild: any,  
     expirationTime: ExpirationTime,
   ): Fiber | null {
     // This function is not recursive.
