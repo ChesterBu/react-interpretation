@@ -743,6 +743,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     newChildren: Array<*>,
     expirationTime: ExpirationTime,
   ): Fiber | null {
+    // 这里不使用双向指针的原因是因为fiber child是没有办法反向遍历的，他是个单链表，而vue采用双向是因为他的children是个数组
     // This algorithm can't optimize by searching from both ends since we
     // don't have backpointers on fibers. I'm trying to see how far we can get
     // with that model. If it ends up not being worth the tradeoffs, we can
@@ -790,6 +791,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       }
       // 如果 key 相同的话就可以复用 fiber。另外 oldFiber 如果为空的话，就会重新创建一个 fiber
       // 这个情况对应上面我看不懂的条件
+      /// updateSlot：key相同的话return更新好的fiber，不同的话就return null
       const newFiber = updateSlot(
         returnFiber,
         oldFiber,
@@ -802,6 +804,7 @@ function ChildReconciler(shouldTrackSideEffects) {
         // unfortunate because it triggers the slow path all the time. We need
         // a better way to communicate whether this was a miss or null,
         // boolean, undefined, etc.
+        // 老的 fiber 的 index > newIdx，oldFiber才会被赋值为null，但如果本来就是null就gg了
         if (oldFiber === null) {
           oldFiber = nextOldFiber;
         }
@@ -1285,7 +1288,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     // Handle object types
     // 接下来开始判断返回值的类型
     const isObject = typeof newChild === 'object' && newChild !== null;
-
+    // 返回单个对象
     if (isObject) {
       // 判断下类型，反正都是单个节点的类型，
       switch (newChild.$$typeof) {
