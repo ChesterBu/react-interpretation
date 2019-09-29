@@ -2570,6 +2570,7 @@ function performWorkOnRoot(
       renderRoot(root, isYieldy);
       finishedWork = root.finishedWork;
       if (finishedWork !== null) {
+        // 在这里进入commit流程
         // We've completed the root. Commit it.
         completeRoot(root, finishedWork, expirationTime);
       }
