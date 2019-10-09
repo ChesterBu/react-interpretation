@@ -698,6 +698,7 @@ function commitRoot(root: FiberRoot, finishedWork: Fiber): void {
   prepareForCommit(root.containerInfo);
 
   // Invoke instances of getSnapshotBeforeUpdate before mutation.
+  // nextEffect用于commit阶段记录firstEffect -> lastEffect链遍历过程中的每一个Fibe
   nextEffect = firstEffect;
   startCommitSnapshotEffectsTimer();
   while (nextEffect !== null) {
