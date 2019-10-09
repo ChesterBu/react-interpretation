@@ -237,6 +237,7 @@ function warnOnFunctionType() {
 // to be able to optimize each path individually by branching early. This needs
 // a compiler or we can do it manually. Helpers that don't need this branching
 // live outside of this function.
+// shouldTrackSideEffects 第一次挂载为false，更新为true
 function ChildReconciler(shouldTrackSideEffects) {
   function deleteChild(returnFiber: Fiber, childToDelete: Fiber): void {
     if (!shouldTrackSideEffects) {
@@ -742,6 +743,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     newChildren: Array<*>,
     expirationTime: ExpirationTime,
   ): Fiber | null {
+    // 这里不使用双向指针的原因是因为fiber child是没有办法反向遍历的，他是个单链表，而vue采用双向是因为他的children是个数组
     // This algorithm can't optimize by searching from both ends since we
     // don't have backpointers on fibers. I'm trying to see how far we can get
     // with that model. If it ends up not being worth the tradeoffs, we can
@@ -789,6 +791,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       }
       // 如果 key 相同的话就可以复用 fiber。另外 oldFiber 如果为空的话，就会重新创建一个 fiber
       // 这个情况对应上面我看不懂的条件
+      /// updateSlot：key相同的话return更新好的fiber，不同的话就return null
       const newFiber = updateSlot(
         returnFiber,
         oldFiber,
@@ -801,6 +804,7 @@ function ChildReconciler(shouldTrackSideEffects) {
         // unfortunate because it triggers the slow path all the time. We need
         // a better way to communicate whether this was a miss or null,
         // boolean, undefined, etc.
+        // 老的 fiber 的 index > newIdx，oldFiber才会被赋值为null，但如果本来就是null就gg了
         if (oldFiber === null) {
           oldFiber = nextOldFiber;
         }
@@ -1114,6 +1118,7 @@ function ChildReconciler(shouldTrackSideEffects) {
   ): Fiber {
     // There's no need to check for keys on text nodes since we don't have a
     // way to define them.
+    // 可以复用
     if (currentFirstChild !== null && currentFirstChild.tag === HostText) {
       // We already have an existing node so let's just update it and delete
       // the rest.
@@ -1124,6 +1129,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
     // The existing first child is not a text node so we need to create one
     // and delete the existing ones.
+    // 不可复用就创建新的
     deleteRemainingChildren(returnFiber, currentFirstChild);
     const created = createFiberFromText(
       textContent,
@@ -1136,22 +1142,24 @@ function ChildReconciler(shouldTrackSideEffects) {
 
   function reconcileSingleElement(
     returnFiber: Fiber,
-    currentFirstChild: Fiber | null,
-    element: ReactElement,
+    currentFirstChild: Fiber | null,  // 第一次渲染时为null
+    element: ReactElement,  // 新的fiber节点
     expirationTime: ExpirationTime,
   ): Fiber {
     const key = element.key;
     let child = currentFirstChild;
+    // 循环原child找到可复用的那个节点
     while (child !== null) {
       // TODO: If key === null and child.key === null, then this only applies to
       // the first item in the list.
+      // 一个一个先比对key不同直接删
       if (child.key === key) {
         if (
           child.tag === Fragment
             ? element.type === REACT_FRAGMENT_TYPE
             : child.elementType === element.type
         ) {
-          // key 相同且 type 相同，进行复用，不相同呢就开始删
+          // key 相同且 type 相同，进行复用，不相同就可以把后面的全删了
           deleteRemainingChildren(returnFiber, child.sibling);
           const existing = useFiber(
             child,
@@ -1168,6 +1176,7 @@ function ChildReconciler(shouldTrackSideEffects) {
           }
           return existing;
         } else {
+          // 没有key相同其他不同，没有复用就全删了break下面重建
           deleteRemainingChildren(returnFiber, child);
           break;
         }
@@ -1245,10 +1254,16 @@ function ChildReconciler(shouldTrackSideEffects) {
   // This API will tag the children with the side-effect of the reconciliation
   // itself. They will be added to the side-effect list as we pass through the
   // children and the parent.
+  //  workInProgress.child = mountChildFibers(
+  //   workInProgress,
+  //   null,
+  //   nextChildren,
+  //   renderExpirationTime,
+  // );
   function reconcileChildFibers(
-    returnFiber: Fiber,
+    returnFiber: Fiber,  // child的父节点
     currentFirstChild: Fiber | null,
-    newChild: any,
+    newChild: any,  
     expirationTime: ExpirationTime,
   ): Fiber | null {
     // This function is not recursive.
@@ -1273,7 +1288,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     // Handle object types
     // 接下来开始判断返回值的类型
     const isObject = typeof newChild === 'object' && newChild !== null;
-
+    // 返回单个对象
     if (isObject) {
       // 判断下类型，反正都是单个节点的类型，
       switch (newChild.$$typeof) {
